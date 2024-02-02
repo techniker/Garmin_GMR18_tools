@@ -158,7 +158,6 @@ class GarminRadar:
         'state': state,
         'countdown': countdown
     }
-    self.publish_mqtt(f"{self.mqtt_topic}/status", json.dumps(status_data))
 
     def handle_response_frame(self, data):
         response = struct.unpack_from('>4x4xI4B4Bb7B', data, 4)
