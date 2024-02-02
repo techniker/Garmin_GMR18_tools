@@ -49,16 +49,36 @@ class GarminRadar:
             command = json.loads(payload)  # Assuming commands are sent as JSON
             print(f"Received command: {command}")
 
-            # Example command handling
+            # Handle power commands
             if command['action'] == 'power_on':
                 self.power_on()
             elif command['action'] == 'power_off':
                 self.power_off()
+
+            # Handle range setting
             elif command['action'] == 'set_range':
-                self.set_range(command['value'])
+                if 'value' in command:
+                    self.set_range(command['value'])
+
+            # Handle gain adjustment
             elif command['action'] == 'set_gain':
-                self.set_gain(command['manual'], command.get('value', 0))
-            # Add more command handling as needed
+                manual = command.get('manual', False)
+                value = command.get('value', 0)  # Default to 0 if not specified
+                self.set_gain(manual, value)
+
+            # Handle FTC (Fast Target Tracking)
+            elif command['action'] == 'set_ftc':
+                on = command.get('on', False)
+                self.set_ftc(on)
+
+            # Handle crosstalk
+            elif command['action'] == 'set_crosstalk':
+                on = command.get('on', False)
+                self.set_crosstalk(on)
+
+            else:
+                print(f"Unknown command action: {command['action']}")
+
         except Exception as e:
             print(f"Error processing command: {e}")
 
