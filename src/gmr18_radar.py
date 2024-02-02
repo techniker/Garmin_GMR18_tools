@@ -116,7 +116,7 @@ class GarminRadar:
         }
         self.publish_mqtt(f"{self.mqtt_topic}/scanline", json.dumps(scanline_data))
 
-    def handle_status_frame(self, data):
+        def handle_status_frame(self, data):
         status = struct.unpack_from('>HHII', data, 4)
         state, countdown = status[0], status[1]
         if state == 1:
@@ -129,6 +129,13 @@ class GarminRadar:
             print("Spinup")
         else:
             print(f"Unknown state {state}")
+            
+        # Publish status data to MQTT
+        status_data = {
+        'state': state,
+        'countdown': countdown
+    }
+    self.publish_mqtt(f"{self.mqtt_topic}/status", json.dumps(status_data))
 
     def handle_response_frame(self, data):
         response = struct.unpack_from('>4x4xI4B4Bb7B', data, 4)
