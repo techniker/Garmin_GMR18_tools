@@ -1,4 +1,5 @@
 # Simple tool for talking to the Garmin GMR18 Radome
+# Configuration and settings local and via MQTT
 #
 # Thanks: promovicz (https://github.com/promovicz/garmin-radar)
 #
@@ -36,8 +37,30 @@ class GarminRadar:
         self.connect_mqtt()
 
     def connect_mqtt(self):
+        self.mqtt_client.on_message = self.on_mqtt_message  # Set the callback
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        self.mqtt_client.subscribe("garmin/radar/command")  # Subscribe to command topic
         self.mqtt_client.loop_start()
+
+        
+    def on_mqtt_message(self, client, userdata, message):
+        try:
+            payload = message.payload.decode('utf-8')
+            command = json.loads(payload)  # Assuming commands are sent as JSON
+            print(f"Received command: {command}")
+
+            # Example command handling
+            if command['action'] == 'power_on':
+                self.power_on()
+            elif command['action'] == 'power_off':
+                self.power_off()
+            elif command['action'] == 'set_range':
+                self.set_range(command['value'])
+            elif command['action'] == 'set_gain':
+                self.set_gain(command['manual'], command.get('value', 0))
+            # Add more command handling as needed
+        except Exception as e:
+            print(f"Error processing command: {e}")
 
     def publish_mqtt(self, topic, message):
         self.mqtt_client.publish(topic, message)
