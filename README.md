@@ -1,5 +1,5 @@
 # Garmin_GMR18_tools
-##Garmin GMR18 Radome Control Tool
+## Garmin GMR18 Radome Control Tool
 
 This tool offers a simple interface for interacting with the Garmin GMR18 Radome, enabling both local and MQTT-based remote control and configuration. 
 It is designed to provide real-time control and status updates for the radar, including power management, range setting, gain adjustment, and more.
