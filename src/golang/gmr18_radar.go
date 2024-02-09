@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -20,6 +23,17 @@ type RadarCommand struct {
 	Value  float64 `json:"value,omitempty"`
 	Manual bool    `json:"manual,omitempty"`
 	On     bool    `json:"on,omitempty"`
+
+// Command constants
+const (
+	CommandPowerOn  uint16 = 0x2B2
+	CommandPowerOff uint16 = 0x2B2
+	CommandSetRange uint16 = 0x2B3
+	CommandSetGain  uint16 = 0x2B4
+)
+
+// Global UDP connection for sending control commands to the radar
+var controlConn *net.UDPConn
 
 func main() {
 	localAddress := "0.0.0.0"
@@ -75,6 +89,71 @@ func main() {
 	}()
 
 	select {} // Keep the main goroutine alive
+}
+
+func handleMQTTMessage(payload []byte) {
+	var cmd RadarCommand
+	if err := json.Unmarshal(payload, &cmd); err != nil {
+		log.Printf("Error unmarshalling command: %v", err)
+		return
+	}
+
+	switch cmd.Action {
+	case "power_on":
+		sendPowerCommand(true)
+	case "power_off":
+		sendPowerCommand(false)
+	case "set_range":
+		sendSetRangeCommand(cmd.Value)
+	case "set_gain":
+		sendSetGainCommand(cmd.Manual, cmd.Value)
+
+	default:
+		log.Printf("Unknown command action: %s", cmd.Action)
+	}
+}
+
+func sendPowerCommand(on bool) {
+	// Sending power on/off command
+	data := uint16(0)
+	if on {
+		data = 2 // power on
+	} else {
+		data = 1 // power off
+	}
+	sendControlCommand(CommandPowerOn, data)
+	fmt.Printf("Power command sent: %v\n", on)
+}
+
+func sendSetRangeCommand(rangeNm float64) {
+	// Convert nautical miles to the radar's range unit
+	rangeVal := uint16(rangeNm * 100) // Example conversion
+	sendControlCommand(CommandSetRange, rangeVal)
+	fmt.Printf("Set range command sent: %f nm\n", rangeNm)
+}
+
+func sendSetGainCommand(manual bool, value float64) {
+	// Convert gain setting to radar's protocol
+	gainVal := uint16(value) //Conversion for manual gain setting
+	if !manual {
+		gainVal = 0 // auto gain
+	}
+	sendControlCommand(CommandSetGain, gainVal)
+	fmt.Printf("Set gain command sent: Manual=%v, Value=%f\n", manual, value)
+}
+
+func sendControlCommand(commandType uint16, value uint16) {
+	// Serialize command according to the radar's protocol
+	var msg []byte
+	msg = make([]byte, 6)
+	binary.BigEndian.PutUint16(msg[0:2], commandType)
+	binary.BigEndian.PutUint16(msg[2:4], 2) // Length of the data
+	binary.BigEndian.PutUint16(msg[4:6], value)
+
+	_, err := controlConn.Write(msg)
+	if err != nil {
+		log.Printf("Failed to send control command: %v", err)
+	}
 }
 
 func handleIncomingData(multicastConn *net.UDPConn, controlConn *net.UDPConn, mqttClient mqtt.Client, mqttTopic string) {
