@@ -55,7 +55,7 @@ Contributions are welcome. Please submit pull requests for new features, bug fix
 ## Acknowledgments
 
 - Special thanks to [promovicz](https://github.com/promovicz/garmin-radar) for their foundational work on Garmin radar communication.
-- Developed by Bjoern Heller <tec at sixtopia.net>
+- Developed by <tec_at_sixtopia.net>
 
 ## License
 Refer to the LICENSE file for more details.
